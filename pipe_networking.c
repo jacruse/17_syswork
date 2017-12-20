@@ -14,6 +14,7 @@
 int server_setup() {
   int wkp;
 
+  printf("[server]: setting up wkp\n");
   //sets up wkp and blocks until sent data from client
   if (mkfifo("well_known_pipe", 0666) == -1) {
     printf("1: %s\n", strerror(errno));
@@ -23,7 +24,8 @@ int server_setup() {
     printf("2: %s\n", strerror(errno));
     exit(0);
   }
-  printf("[server]: setting up wkp\n");
+  remove("well_known_pipe");
+
   return wkp;
 }
 
@@ -40,19 +42,17 @@ int server_connect(int from_client) {
   char buffer[BUFFER_SIZE];
   int fifo;
 
-  read(from_client, buffer, sizeof(buffer));
-  if (fork()) {
-    remove("well_known_pipe");
-    from_client = server_setup();
-    return from_client;
+  printf("[server]: setting up wkp\n");
+  read(from_client, buffer, BUFFER_SIZE);
+  printf("[server]: read %s\n", buffer);
+
+  fifo = open(buffer, O_WRONLY, 0);
+  write(fifo, "init", sizeof(char *));
+
+  if (read(from_client, buffer, BUFFER_SIZE)) {
+      printf("[server]: connection established\n");
   }
-  else {
-    printf("[subserver %d]: sending %s\n", getpid(), buffer);
-    fifo = open(buffer, O_WRONLY);
-    write(fifo, buffer, BUFFER_SIZE);
-    return fifo;
-  }
-  return -1;
+  return fifo;
 }
 
 /*=========================

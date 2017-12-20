@@ -105,6 +105,7 @@ int client_handshake(int *to_server) {
 
   int from_server;
   char buffer[HANDSHAKE_BUFFER_SIZE];
+  char fifo_name[HANDSHAKE_BUFFER_SIZE];
 
   //send pp name to server
   printf("[client] handshake: connecting to wkp\n");
@@ -113,19 +114,23 @@ int client_handshake(int *to_server) {
     exit(1);
 
   //make private pipe
-  sprintf(buffer, "%d", getpid() );
-  mkfifo(buffer, 0600);
+  sprintf(fifo_name, "%d", getpid() );
+  //printf("%s\n", buffer);
+  mkfifo(fifo_name, 0600);
 
-  write(*to_server, buffer, sizeof(buffer));
+  write(*to_server, fifo_name, sizeof(buffer));
 
   //open and wait for connection
-  from_server = open(buffer, O_RDONLY, 0);
+  from_server = open(fifo_name, O_RDONLY, 0);
   read(from_server, buffer, sizeof(buffer));
   /*validate buffer code goes here */
   printf("[client] handshake: received [%s]\n", buffer);
 
   //remove pp
-  remove(buffer);
+  if (remove(fifo_name) == -1) {
+    printf("%s\n", strerror(errno));
+    exit(0);
+  }
   printf("[client] handshake: removed pp\n");
 
   //send ACK to server

@@ -16,7 +16,9 @@ int main() {
   int from_client;
   int f;
 
-  signal(SIGINT, sighandler);
+  if (signal(SIGINT, sighandler) == SIG_ERR) {
+    printf("Can't catch SIGINT\n");
+  }
 
   while(1) {
     from_client = server_setup();
